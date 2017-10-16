@@ -1,0 +1,181 @@
+Part 1
+AwesomePrint.irb!
+
+Provide one or more Active Record queries that retrieve the requested data for each of the following:
+1) Find the albums recorded by the artist Queen.
+
+Artist.find_by(name: "Queen")
+  Artist Load (0.4ms)  SELECT  "artists".* FROM "artists" WHERE "artists"."name" = $1 LIMIT $2  [["name", "Queen"], ["LIMIT", 1]]
+  => #<Artist id: 51, name: "Queen", created_at: "2006-01-08 22:57:01", updated_at: "2014-01-29 22:10:22">
+Album.where("artist_id = 51")
+    Album Exists (0.5ms)  SELECT  1 AS one FROM "albums" WHERE (artist_id = 51) LIMIT $1  [["LIMIT", 1]]
+    Album Load (0.4ms)  SELECT "albums".* FROM "albums" WHERE (artist_id = 51)
+RESULT ==>  [
+      [0] #<Album:0x007fe99e27a670> {
+                  :id => 36,
+           :artist_id => 51,
+               :title => "Greatest Hits II",
+          :created_at => Wed, 30 Jan 2008 14:00:12 UTC +00:00,
+          :updated_at => Wed, 29 Jan 2014 22:14:02 UTC +00:00
+      },
+      [1] #<Album:0x007fe99e27a530> {
+                  :id => 185,
+           :artist_id => 51,
+               :title => "Greatest Hits I",
+          :created_at => Sat, 29 Dec 2007 12:02:13 UTC +00:00,
+          :updated_at => Wed, 29 Jan 2014 22:14:02 UTC +00:00
+      },
+      [2] #<Album:0x007fe99e27a3f0> {
+                  :id => 186,
+           :artist_id => 51,
+               :title => "News Of The World",
+          :created_at => Wed, 23 Jun 2010 20:50:06 UTC +00:00,
+          :updated_at => Wed, 29 Jan 2014 22:14:02 UTC +00:00
+      }
+  ]
+
+2) Count how many tracks belong to the media type "Protected MPEG-4 video file".
+
+MediaType.where("name = 'Protected MPEG-4 video file'")[0][:id]
+  MediaType Load (0.6ms)  SELECT "media_types".* FROM "media_types" WHERE (name = 'Protected MPEG-4 video file')
+
+  Track.where("media_type_id = 3").count
+     (1.9ms)  SELECT COUNT(*) FROM "tracks" WHERE (media_type_id = 3)
+RESULT ==>  214
+
+3) Find the genre with the name "Hip Hop/Rap".
+Genre.find_by(name: 'Hip Hop/Rap')
+  Genre Load (0.5ms)  SELECT  "genres".* FROM "genres" WHERE "genres"."name" = $1 LIMIT $2  [["name", "Hip Hop/Rap"], ["LIMIT", 1]]
+#<Genre:0x007fe99e59dcf8> {
+            :id => 17,
+          :name => "Hip Hop/Rap",
+    :created_at => Sun, 20 Jan 2013 02:04:31 UTC +00:00,
+    :updated_at => Wed, 29 Jan 2014 22:14:08 UTC +00:00
+}
+
+
+4) Count how many tracks belong to the "Hip Hop/Rap" genre
+Track.where("genre_id = 17").count
+   (2.1ms)  SELECT COUNT(*) FROM "tracks" WHERE (genre_id = 17)
+RESULT ==> 35
+
+
+5) Find the total amount of time required to listen to all the tracks in the database.
+Track.sum(:milliseconds)/60000
+RESULT ==> 22976 minutes or 1378575827 milliseconds
+ALTERNATIVE WAY TO CONVERT MILLISECONDS TO HMS
+Time.at(Track.sum(:milliseconds)/1000).utc.strftime("%d days %Hh:%Mm:%Ss")
+   (1.8ms)  SELECT SUM("tracks"."milliseconds") FROM "tracks"
+"16 days 22h:56m:15s"
+
+
+6) Find the highest price of any track that has the media type "MPEG audio file".
+MediaType.where("name = 'MPEG audio file'")[0][:id]
+  MediaType Load (0.6ms)  SELECT "media_types".* FROM "media_types" WHERE (name = 'MPEG audio file')
+TEMP RESULT ==> 1
+
+Track.where("media_type_id = 1").order(unit_price: :desc).order(name: :asc).first
+ Track Load (5.8ms)  SELECT  "tracks".* FROM "tracks" WHERE (media_type_id = 1) ORDER BY "tracks"."unit_price" DESC, "tracks"."name" ASC LIMIT $1  [["LIMIT", 1]]
+#<Track:0x007fe99e6e2eb0> {
+              :id => 978,
+        :album_id => 78,
+        :genre_id => 7,
+   :media_type_id => 1,
+            :name => "Rindo À Toa",
+        :composer => nil,
+    :milliseconds => 222066,
+           :bytes => 7365321,
+      :unit_price => 4.99,
+      :created_at => Sat, 28 Feb 2009 21:15:55 UTC +00:00,
+      :updated_at => Fri, 13 Oct 2017 19:07:03 UTC +00:00
+}
+
+7) Find the name of the most expensive track that has the media type "MPEG audio file".
+Track.where("media_type_id = 1").order(unit_price: :desc).first.name
+  Track Load (3.1ms)  SELECT  "tracks".* FROM "tracks" WHERE (media_type_id = 1) ORDER BY "tracks"."unit_price" DESC LIMIT $1  [["LIMIT", 1]]
+ANSWER ==> "Rindo À Toa"
+
+8) Find the 2 oldest artists.
+Artist.order(created_at: :asc).first(2)
+  Artist Load (0.7ms)  SELECT  "artists".* FROM "artists" ORDER BY "artists"."created_at" ASC LIMIT $1  [["LIMIT", 2]]
+[
+    [0] #<Artist:0x007fe9a638a508> {
+                :id => 258,
+              :name => "Les Arts Florissants & William Christie",
+        :created_at => Fri, 13 Feb 2004 06:08:36 UTC +00:00,
+        :updated_at => Wed, 29 Jan 2014 22:10:22 UTC +00:00
+    },
+    [1] #<Artist:0x007fe9a638a3c8> {
+                :id => 31,
+              :name => "Baby Consuelo",
+        :created_at => Mon, 16 Feb 2004 22:04:39 UTC +00:00,
+        :updated_at => Wed, 29 Jan 2014 22:10:22 UTC +00:00
+    }
+]
+
+
+9) Find the least expensive track that has the genre "Electronica/Dance".
+Genre.where("name = 'Electronica/Dance'")[0][:id]
+  Genre Load (0.7ms)  SELECT "genres".* FROM "genres" WHERE (name = 'Electronica/Dance')
+15
+Track.where("genre_id = 15").order(unit_price: :desc).first
+  Track Load (1.8ms)  SELECT  "tracks".* FROM "tracks" WHERE (genre_id = 15) ORDER BY "tracks"."unit_price" DESC LIMIT $1  [["LIMIT", 1]]
+#<Track:0x007fe99dfe3088> {
+               :id => 3319,
+         :album_id => 259,
+         :genre_id => 15,
+    :media_type_id => 1,
+             :name => "Instinto Colectivo",
+         :composer => nil,
+     :milliseconds => 300564,
+            :bytes => 12024875,
+       :unit_price => 0.99,
+       :created_at => Mon, 27 Sep 2004 22:40:29 UTC +00:00,
+       :updated_at => Wed, 29 Jan 2014 22:15:04 UTC +00:00
+}
+
+10) Find all "MPEG autio file" tracks in the genre "Electronica/Dance".
+MediaType.find_by(name: 'MPEG audio file').id
+
+Genre.find_by(name: 'Electronica/Dance').id
+
+Track.where(genre_id: Genre.find_by(name: 'Electronica/Dance')).where(media_type_id: MediaType.find_by(name: 'MPEG audio file'))
+
+PART 2 : Stretch: Querying the Chinook Database using SQL
+
+1) Find the albums recorded by the artist Queen.
+
+SELECT title FROM albums WHERE artist_id = (SELECT id FROM artists WHERE name = 'Queen');                                                              ;
+
+2) Count how many tracks belong to the media type "Protected MPEG-4 video file".
+SELECT COUNT(name) FROM tracks WHERE media_type_id =  (SELECT id FROM media_types WHERE name = 'Protected MPEG-4 video file');
+ANSWER ==> 214
+
+3) Find the least expensive track that has the genre "Electronica/Dance".
+  SELECT * FROM tracks WHERE genre_id = (SELECT id from genres WHERE name = 'Electronica/Dance') ORDER BY unit_price desc LIMIT 1;
+
+4) Find the all the artists whose names start with A.
+Artist.where("name ILIKE ?", 'A%')
+SELECT name FROM artists WHERE name ILIKE 'A%';
+
+
+5) Find all the tracks that belong to playlist 1.
+Playlist.where("id = 1")
+  Playlist Exists (0.8ms)  SELECT  1 AS one FROM "playlists" WHERE (id = 1) LIMIT $1  [["LIMIT", 1]]
+  Playlist Load (0.4ms)  SELECT "playlists".* FROM "playlists" WHERE (id = 1)
+[
+    [0] #<Playlist:0x007fe9a00c8a78> {
+                :id => 1,
+              :name => "Music",
+        :created_at => Mon, 17 Jan 2005 17:01:12 UTC +00:00,
+        :updated_at => Wed, 29 Jan 2014 22:14:33 UTC +00:00
+    }
+]
+
+SELECT * FROM tracks WHERE id IN (SELECT track_id FROM playlists_tracks WHERE playlist_id = 1) ORDER BY name;
+
+### SECOND OPTION ####
+SELECT tracks.*
+FROM tracks
+INNER JOIN playlists_tracks ON tracks.id = playlists_tracks.track_id
+WHERE playlists_tracks.playlist_id = 1 ORDER BY tracks.name;
